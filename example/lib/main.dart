@@ -20,20 +20,20 @@ class MyApp extends StatelessWidget {
             dismissOfflineBanner: false,
             offlineCallback: () => log('offline'),
             onlineCallback: () => log('back online'),
-            offlineBanner: SizedBox(
-              height: MediaQuery.of(context).size.height,
-              width: double.infinity,
-              child: Center(
-                child: Material(
-                  child: Container(
-                    color: Colors.red,
-                    child: const Center(
-                      child: Text('No internet connection'),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // offlineBanner: SizedBox(
+            //   height: MediaQuery.of(context).size.height,
+            //   width: double.infinity,
+            //   child: Center(
+            //     child: Material(
+            //       child: Container(
+            //         color: Colors.red,
+            //         child: const Center(
+            //           child: Text('No internet connection'),
+            //         ),
+            //       ),
+            //     ),
+            //   ),
+            // ),
             builder: (BuildContext context, bool isOnline) {
               return child!;
             });

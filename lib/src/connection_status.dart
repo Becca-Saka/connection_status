@@ -1,4 +1,4 @@
-import 'package:connection_status/src/connection_utill.dart';
+import 'package:connection_status/src/connection_util.dart';
 import 'package:flutter/material.dart';
 
 /// Callback to be called when the phone is in offline mode
@@ -62,39 +62,42 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: ConnectionUtil.instance.connectionChange,
-        builder: (context, AsyncSnapshot<bool> snapshot) {
-          if (snapshot.hasData) {
-            if (snapshot.data!) {
-              animationController.reverse();
-              if (widget.onlineCallback != null) widget.onlineCallback!();
-            } else {
-              animationController.forward();
-              if (widget.offlineCallback != null) widget.offlineCallback!();
-            }
+      stream: ConnectionUtil.instance.connectionChange,
+      builder: (context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            animationController.reverse();
+            if (widget.onlineCallback != null) widget.onlineCallback!();
+          } else {
+            animationController.forward();
+            if (widget.offlineCallback != null) widget.offlineCallback!();
           }
-          return Stack(
-            children: <Widget>[
-              widget.builder(context, snapshot.data ?? true),
-              if (widget.showOfflineBanner && !(snapshot.data ?? true))
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: widget.dismissOfflineBanner
-                      ? SlideTransition(
-                          position: animationController.drive(Tween<Offset>(
-                            begin: const Offset(0.0, 1.0),
-                            end: Offset.zero,
-                          ).chain(CurveTween(
-                            curve: Curves.fastOutSlowIn,
-                          ))),
-                          child: Material(
-                              child: widget.offlineBanner ??
-                                  _NoConnectivityBanner()))
-                      : widget.offlineBanner ?? _NoConnectivityBanner(),
-                )
-            ],
-          );
-        });
+        }
+        return Stack(
+          children: <Widget>[
+            widget.builder(context, snapshot.data ?? true),
+            if (widget.showOfflineBanner && !(snapshot.data ?? true))
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: widget.dismissOfflineBanner
+                    ? SlideTransition(
+                        position: animationController.drive(Tween<Offset>(
+                          begin: const Offset(0.0, 1.0),
+                          end: Offset.zero,
+                        ).chain(CurveTween(
+                          curve: Curves.fastOutSlowIn,
+                        ))),
+                        child: Material(
+                          child:
+                              widget.offlineBanner ?? _NoConnectivityBanner(),
+                        ),
+                      )
+                    : widget.offlineBanner ?? _NoConnectivityBanner(),
+              )
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -104,15 +107,18 @@ class _NoConnectivityBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       child: Container(
-          padding: const EdgeInsets.all(10),
-          width: double.infinity,
-          color: Colors.red,
-          child: const Text(
-            "No internet connection",
-            style: TextStyle(
-                fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
-          )),
+        padding: const EdgeInsets.all(10),
+        width: double.infinity,
+        color: Colors.red,
+        child: Text(
+          "No internet connection",
+          textAlign: TextAlign.center,
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(color: Colors.white),
+        ),
+      ),
     );
   }
 }
