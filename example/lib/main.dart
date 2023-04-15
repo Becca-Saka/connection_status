@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       builder: (context, child) {
         return ConnectionWidget(
-            dismissOfflineBanner: false,
+            dismissOfflineBanner: true,
             offlineCallback: () => log('offline'),
             onlineCallback: () => log('back online'),
             // offlineBanner: SizedBox(
