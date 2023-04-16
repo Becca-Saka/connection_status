@@ -1,8 +1,6 @@
-import 'package:connection_status/src/connection_utill.dart';
+import 'package:connection_status/connection_status.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:connection_status/connection_status.dart';
 
 void main() {
   //test connectivity status

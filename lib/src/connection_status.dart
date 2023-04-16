@@ -1,4 +1,4 @@
-import 'package:connection_status/src/connection_utill.dart';
+import 'package:connection_status/src/connection_util.dart';
 import 'package:flutter/material.dart';
 
 /// Callback to be called when the phone is in offline mode
@@ -12,6 +12,18 @@ typedef OnlineCallback = void Function();
 typedef ConnectivityBuilder = Widget Function(
     BuildContext context, bool isOnline);
 
+/// This is an enum type called [OfflineBannerType]. It contains two
+/// possible values: [overlay] and [docked], which can be used to represent the
+/// display type of an offline banner. The overlay value represents an offline
+/// banner that appears as an overlay, while the docked value represents an
+/// offline banner that is docked to a specific position on the screen.
+enum OfflineBannerType { overlay, docked }
+
+/// This enum can be used to set the vertical position of the offline banner.
+/// This is an enumeration of two positions, [top] and [bottom], for an offline
+/// banner that can be displayed in a user interface.
+enum OfflineBannerPosition { top, bottom }
+
 class ConnectionWidget extends StatefulWidget {
   final ConnectivityBuilder builder;
 
@@ -20,6 +32,8 @@ class ConnectionWidget extends StatefulWidget {
   final Widget? offlineBanner;
   final bool showOfflineBanner;
   final bool dismissOfflineBanner;
+  final OfflineBannerType bannerType;
+  final OfflineBannerPosition bannerPosition;
 
   const ConnectionWidget({
     Key? key,
@@ -29,27 +43,27 @@ class ConnectionWidget extends StatefulWidget {
     this.showOfflineBanner = true,
     this.dismissOfflineBanner = true,
     this.offlineBanner,
+    this.bannerType = OfflineBannerType.docked,
+    this.bannerPosition = OfflineBannerPosition.top,
   }) : super(key: key);
 
   @override
-  _ConnectionWidgetState createState() => _ConnectionWidgetState();
+  State<ConnectionWidget> createState() => _ConnectionWidgetState();
 }
 
 class _ConnectionWidgetState extends State<ConnectionWidget>
     with SingleTickerProviderStateMixin {
-  bool? dontAnimate;
-
   late AnimationController animationController;
+  late Animation<double> anim;
 
   @override
   void initState() {
-    animationController =
-        AnimationController(duration: const Duration(seconds: 2), vsync: this);
-
-    if (dontAnimate == null && !(ConnectionUtil.instance.hasConnection)) {
-      animationController.value = 1.0;
-    }
     super.initState();
+    animationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    anim = Tween<double>(begin: 0, end: 1).animate(animationController);
   }
 
   @override
@@ -62,57 +76,108 @@ class _ConnectionWidgetState extends State<ConnectionWidget>
   @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-        stream: ConnectionUtil.instance.connectionChange,
-        builder: (context, AsyncSnapshot<bool> snapshot) {
-          if (snapshot.hasData) {
-            if (snapshot.data!) {
-              animationController.reverse();
-              if (widget.onlineCallback != null) widget.onlineCallback!();
-            } else {
-              animationController.forward();
-              if (widget.offlineCallback != null) widget.offlineCallback!();
-            }
+      stream: ConnectionUtil.instance.connectionChange,
+      builder: (context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.hasData) {
+          if (snapshot.data!) {
+            animationController.reverse();
+            if (widget.onlineCallback != null) widget.onlineCallback!();
+          } else {
+            animationController.forward();
+            if (widget.offlineCallback != null) widget.offlineCallback!();
           }
-          return Stack(
-            children: <Widget>[
-              widget.builder(context, snapshot.data ?? true),
-              if (widget.showOfflineBanner && !(snapshot.data ?? true))
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: widget.dismissOfflineBanner
-                      ? SlideTransition(
-                          position: animationController.drive(Tween<Offset>(
-                            begin: const Offset(0.0, 1.0),
-                            end: Offset.zero,
-                          ).chain(CurveTween(
-                            curve: Curves.fastOutSlowIn,
-                          ))),
-                          child: Material(
-                              child: widget.offlineBanner ??
-                                  _NoConnectivityBanner()))
-                      : widget.offlineBanner ?? _NoConnectivityBanner(),
-                )
-            ],
-          );
-        });
+        }
+        return LayoutWidget(
+          bannerType: widget.bannerType,
+          bannerPosition: widget.bannerPosition,
+          bannerWidget: SizeTransition(
+            sizeFactor: anim,
+            child: widget.offlineBanner ??
+                _NoConnectivityBanner(
+                  hasSafeArea:
+                      widget.bannerPosition == OfflineBannerPosition.top,
+                ),
+          ),
+          child: widget.builder(context, snapshot.data ?? true),
+        );
+      },
+    );
+  }
+}
+
+class LayoutWidget extends StatelessWidget {
+  final OfflineBannerType bannerType;
+  final OfflineBannerPosition bannerPosition;
+  final Widget child;
+  final Widget? bannerWidget;
+
+  const LayoutWidget({
+    Key? key,
+    required this.bannerType,
+    required this.bannerPosition,
+    required this.child,
+    this.bannerWidget,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    switch (bannerType) {
+      // Will limit when there is no definite sized box
+      case OfflineBannerType.overlay:
+        return Stack(
+          children: <Widget>[
+            child,
+            if (bannerWidget != null)
+              Align(
+                alignment: bannerPosition == OfflineBannerPosition.bottom
+                    ? Alignment.bottomCenter
+                    : Alignment.topCenter,
+                child: bannerWidget!,
+              ),
+          ],
+        );
+      case OfflineBannerType.docked:
+        return Column(
+          verticalDirection: bannerPosition == OfflineBannerPosition.bottom
+              ? VerticalDirection.down
+              : VerticalDirection.up,
+          children: [
+            Expanded(child: child),
+            if (bannerWidget != null) bannerWidget!,
+          ],
+        );
+    }
   }
 }
 
 /// Default Banner for offline mode
 class _NoConnectivityBanner extends StatelessWidget {
+  final bool hasSafeArea;
+  const _NoConnectivityBanner({
+    Key? key,
+    required this.hasSafeArea,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: Container(
+    return SafeArea(
+      top: hasSafeArea,
+      bottom: false,
+      child: Material(
+        child: Container(
           padding: const EdgeInsets.all(10),
           width: double.infinity,
           color: Colors.red,
-          child: const Text(
+          child: Text(
             "No internet connection",
-            style: TextStyle(
-                fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
-          )),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: Colors.white),
+          ),
+        ),
+      ),
     );
   }
 }
