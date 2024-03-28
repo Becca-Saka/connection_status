@@ -1,3 +1,10 @@
+## 0.0.2
+
+* Bumped outdated version
+* Updated SDK constraints
+* Exposded connection util
+
+
 ## 0.0.1
 
 * Check internet connection status

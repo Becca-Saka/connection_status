@@ -1,6 +1,6 @@
 name: connection_status
 description: A dart package to check the connection status of the device.
-version: 0.0.1
+version: 0.0.2
 homepage: https://github.com/Becca-Saka/connection_status
 
 environment:
